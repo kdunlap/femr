@@ -16,6 +16,7 @@ val appDependencies = Seq(
   evolutions,
   jodaForms,
   guice,
+  filters,
   "mysql" % "mysql-connector-java" % "5.1.41",
   "org.mindrot" % "jbcrypt" % "0.3m",
   "org.apache.commons" % "commons-collections4" % "4.0",
@@ -24,7 +25,8 @@ val appDependencies = Seq(
   "com.itextpdf" % "itextpdf" % "5.5.6",
   "com.itextpdf.tool" % "xmlworker" % "5.5.6",
   "com.h2database" % "h2" % "1.4.193",
-  "com.jcraft" % "jsch" % "0.1.54"
+  "com.jcraft" % "jsch" % "0.1.54",
+  "com.auth0" % "java-jwt" % "3.3.0"
 )
 
 

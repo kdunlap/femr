@@ -99,3 +99,9 @@ GET         /assets/*file                                       controllers.Asse
 #Feedback
 GET         /feedback                                           @femr.ui.controllers.FeedbackController.indexGet()
 POST        /feedback                                           @femr.ui.controllers.FeedbackController.indexPost()
+
+#API
++noJwtFilter
+POST        /api/login                                          @femr.ui.controllers.api.SessionsController.login()
+
+GET         /api/user                                          @femr.ui.controllers.api.UserController.get()
