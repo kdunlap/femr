@@ -1,6 +1,6 @@
 package femr.util.filters.jwt;
 
-import femr.business.wrappers.sessions.jwt.IVerifiedJwt;
+import femr.common.dtos.jwt.IVerifiedJwt;
 import play.libs.typedmap.TypedKey;
 
 public class Attrs {

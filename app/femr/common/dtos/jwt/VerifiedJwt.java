@@ -1,4 +1,4 @@
-package femr.business.wrappers.sessions.jwt;
+package femr.common.dtos.jwt;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import play.libs.Json;
@@ -40,6 +40,12 @@ public class VerifiedJwt implements IVerifiedJwt {
     public Date getExpiresAt() {
         return expiresAt;
     }
+
+    @Override
+    public Integer getUserId(){
+        return userId;
+    }
+
     @Override
     public String toString() {
         return Json.toJson(this).toString();

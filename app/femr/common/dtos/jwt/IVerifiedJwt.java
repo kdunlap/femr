@@ -1,4 +1,4 @@
-package femr.business.wrappers.sessions.jwt;
+package femr.common.dtos.jwt;
 
 import java.util.Date;
 
@@ -7,4 +7,5 @@ public interface IVerifiedJwt {
     String getPayload();
     String getIssuer();
     Date getExpiresAt();
+    Integer getUserId();
 }

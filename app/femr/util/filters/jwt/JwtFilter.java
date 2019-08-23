@@ -7,9 +7,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import javax.inject.Inject;
 import akka.stream.Materializer;
-import femr.business.wrappers.sessions.jwt.IJwtValidator;
-import femr.business.wrappers.sessions.jwt.IVerifiedJwt;
-import play.Logger;
+import femr.business.helpers.jwt.IJwtValidator;
+import femr.common.dtos.jwt.IVerifiedJwt;
 import play.libs.F;
 import play.mvc.*;
 import play.routing.HandlerDef;
@@ -21,7 +20,7 @@ public class JwtFilter extends Filter {
     private static final String HEADER_AUTHORIZATION = "Authorization";
     private static final String BEARER = "Bearer ";
     private static final String ROUTE_MODIFIER_NO_JWT_FILTER_TAG = "noJwtFilter";
-    private static final String ERR_AUTHORIZATION_HEADER = "ERR_AUTHORIZATION_HEADER";
+    private static final String ERR_AUTHORIZATION_HEADER = "Authorization Header is required and not present";
     private IJwtValidator jwtValidator;
 
     @Inject
@@ -46,7 +45,6 @@ public class JwtFilter extends Filter {
         Optional<String> authHeader =  requestHeader.getHeaders().get(HEADER_AUTHORIZATION);
 
         if (!authHeader.filter(ah -> ah.contains(BEARER)).isPresent()) {
-            Logger.error("f=JwtFilter, error=authHeaderNotPresent");
             return CompletableFuture.completedFuture(forbidden(ERR_AUTHORIZATION_HEADER));
         }
 
@@ -54,7 +52,13 @@ public class JwtFilter extends Filter {
         F.Either<IJwtValidator.Error, IVerifiedJwt> res = jwtValidator.verify(token);
 
         if (res.left.isPresent()) {
-            return CompletableFuture.completedFuture(forbidden(res.left.get().toString()));
+
+            String message = res.left.get().toString();
+            if(res.left.get() == IJwtValidator.Error.ERR_INVALID_SIGNATURE_OR_CLAIM){
+                message = "Invalid Signature or Claim";
+            }
+
+            return CompletableFuture.completedFuture(forbidden(message));
         }
 
         return nextFilter.apply(requestHeader.withAttrs(requestHeader.attrs().put(Attrs.VERIFIED_JWT, res.right.get())));

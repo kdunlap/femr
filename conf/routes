@@ -102,6 +102,8 @@ POST        /feedback                                           @femr.ui.control
 
 #API
 +noJwtFilter
-POST        /api/login                                          @femr.ui.controllers.api.SessionsController.login()
+POST        /api/login                                          @femr.ui.controllers.api.LoginController.login()
 
-GET         /api/user                                          @femr.ui.controllers.api.UserController.get()
+POST        /api/logout                                         @femr.ui.controllers.api.LoginController.logout()
+POST        /api/refresh                                        @femr.ui.controllers.api.LoginController.refresh()
+GET         /api/user                                           @femr.ui.controllers.api.UserController.get()

@@ -20,10 +20,12 @@ package femr.util.dependencyinjection.modules;
 
 import com.google.inject.AbstractModule;
 import femr.business.services.core.*;
+import femr.business.services.core.api.IAuthService;
 import femr.business.services.system.*;
+import femr.business.services.system.api.AuthService;
 import femr.business.wrappers.sessions.ISessionHelper;
 import femr.business.wrappers.sessions.SessionHelper;
-import femr.business.wrappers.sessions.jwt.*;
+import femr.business.helpers.jwt.*;
 
 public class BusinessLayerModule extends AbstractModule {
 
@@ -47,7 +49,7 @@ public class BusinessLayerModule extends AbstractModule {
         bind(IUserService.class).to(UserService.class);
         bind(IVitalService.class).to(VitalService.class);
 
-        bind(IJwtHelper.class).to(JwtHelper.class);
         bind(IJwtValidator.class).to(JwtValidator.class);
+        bind(IAuthService.class).to(AuthService.class);
     }
 }

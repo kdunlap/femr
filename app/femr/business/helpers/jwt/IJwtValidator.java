@@ -1,5 +1,6 @@
-package femr.business.wrappers.sessions.jwt;
+package femr.business.helpers.jwt;
 
+import femr.common.dtos.jwt.IVerifiedJwt;
 import play.libs.F;
 
 public interface IJwtValidator {
