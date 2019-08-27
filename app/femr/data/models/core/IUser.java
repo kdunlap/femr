@@ -42,6 +42,14 @@ public interface IUser {
 
     void setPassword(String password);
 
+    String getRefreshToken();
+
+    void setRefreshToken(String refreshToken);
+
+    DateTime getRefreshTokenIssuedAt();
+
+    void setRefreshTokenIssuedAt(DateTime refreshTokenIssuedAt);
+
     List<IRole> getRoles();
 
     void setRoles(List<? extends IRole> roles);

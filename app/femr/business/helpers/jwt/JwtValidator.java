@@ -20,12 +20,16 @@ public class JwtValidator implements IJwtValidator {
     private JWTVerifier verifier;
 
     @Inject
-    public JwtValidator(Config config) throws UnsupportedEncodingException {
-        String secret = config.getString("play.http.secret.key");
+    public JwtValidator(Config configuration) throws UnsupportedEncodingException {
+        String secret = configuration.getString("play.http.secret.key");
+        String issuer = "fe.mr";
+        if(configuration.hasPath("jwt.issuer")) {
+            issuer = configuration.getString("jwt.issuer");
+        }
 
         Algorithm algorithm = Algorithm.HMAC256(secret);
         verifier = JWT.require(algorithm)
-            .withIssuer("fEMR")
+            .withIssuer(issuer)
             .build();
     }
 

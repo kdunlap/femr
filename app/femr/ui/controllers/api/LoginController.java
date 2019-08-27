@@ -4,8 +4,12 @@ import com.google.inject.Inject;
 import femr.business.services.core.api.IAuthService;
 import femr.common.dtos.CurrentUser;
 import femr.common.dtos.ServiceResponse;
+import femr.common.dtos.jwt.IVerifiedJwt;
+import femr.common.dtos.jwt.UserTokens;
 import femr.ui.models.api.AuthResponseDTO;
+import femr.ui.models.api.RefreshRequestDTO;
 import femr.ui.models.sessions.CreateViewModel;
+import femr.util.filters.jwt.Attrs;
 import play.data.Form;
 import play.data.FormFactory;
 import play.libs.Json;
@@ -32,16 +36,16 @@ public class LoginController extends Controller {
 
         if (response.hasErrors()) return forbidden();
         else{
-
-            // TODO - can we implement a refresh token here?
-
             CurrentUser user = response.getResponseObject();
-            ServiceResponse<String> tokenResponse = authService.getSignedToken(user);
-
+            ServiceResponse<UserTokens> tokenResponse = authService.createUserTokens(user);
             // TODO - maybe this should be more specific?
             if(tokenResponse.hasErrors()) throw new RuntimeException();
 
-            AuthResponseDTO authResponseDTO = new AuthResponseDTO(user.getId(), tokenResponse.getResponseObject());
+            UserTokens userTokens = tokenResponse.getResponseObject();
+            AuthResponseDTO authResponseDTO = new AuthResponseDTO(
+                userTokens.getUserId(),
+                userTokens.getAuthToken(),
+                userTokens.getRefreshToken());
 
             return ok(Json.toJson(authResponseDTO));
         }
@@ -49,11 +53,31 @@ public class LoginController extends Controller {
 
     public Result logout(){
 
-        return ok("implement me");
+        IVerifiedJwt verifiedJwt = request().attrs().getOptional(Attrs.VERIFIED_JWT)
+            .orElseThrow(RuntimeException::new);
+
+        // clear refresh token from database
+        ServiceResponse<Integer> logoutResponse = authService.logoutUser(verifiedJwt.getUserId());
+        if(logoutResponse.hasErrors()) throw new RuntimeException();
+
+        return ok(Json.toJson(true));
     }
 
     public Result refresh(){
 
-        return ok("implement me");
+        final Form<RefreshRequestDTO> createViewModelForm = formFactory.form(RefreshRequestDTO.class);
+        RefreshRequestDTO refreshRequestDTO = createViewModelForm.bindFromRequest().get();
+
+        // get refresh token from post
+        ServiceResponse<UserTokens> refreshResponse = authService.refreshUserTokens(refreshRequestDTO.getRefreshToken());
+        if(refreshResponse.hasErrors()) throw new RuntimeException();
+
+        UserTokens userTokens = refreshResponse.getResponseObject();
+        AuthResponseDTO authResponseDTO = new AuthResponseDTO(
+            userTokens.getUserId(),
+            userTokens.getAuthToken(),
+            userTokens.getRefreshToken());
+
+        return ok(Json.toJson(authResponseDTO));
     }
 }

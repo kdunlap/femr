@@ -1,13 +1,14 @@
-package femr.ui.models.api;
+package femr.common.dtos.jwt;
 
-public class AuthResponseDTO {
+public class UserTokens {
+
     private Integer userId;
-    private String token;
+    private String authToken;
     private String refreshToken;
 
-    public AuthResponseDTO(Integer userId, String token, String refreshToken) {
+    public UserTokens(Integer userId, String authToken, String refreshToken) {
         this.userId = userId;
-        this.token = token;
+        this.authToken = authToken;
         this.refreshToken = refreshToken;
     }
 
@@ -15,8 +16,8 @@ public class AuthResponseDTO {
         return userId;
     }
 
-    public String getToken() {
-        return token;
+    public String getAuthToken() {
+        return authToken;
     }
 
     public String getRefreshToken() {

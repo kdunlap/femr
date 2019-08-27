@@ -21,6 +21,7 @@ public class JwtFilter extends Filter {
     private static final String BEARER = "Bearer ";
     private static final String ROUTE_MODIFIER_NO_JWT_FILTER_TAG = "noJwtFilter";
     private static final String ERR_AUTHORIZATION_HEADER = "Authorization Header is required and not present";
+    private static final String ERR_INVALID_SIGNATURE = "Invalid Signature or Claim";
     private IJwtValidator jwtValidator;
 
     @Inject
@@ -55,7 +56,7 @@ public class JwtFilter extends Filter {
 
             String message = res.left.get().toString();
             if(res.left.get() == IJwtValidator.Error.ERR_INVALID_SIGNATURE_OR_CLAIM){
-                message = "Invalid Signature or Claim";
+                message = ERR_INVALID_SIGNATURE;
             }
 
             return CompletableFuture.completedFuture(forbidden(message));

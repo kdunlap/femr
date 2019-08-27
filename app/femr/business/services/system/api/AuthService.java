@@ -3,10 +3,13 @@ package femr.business.services.system.api;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.typesafe.config.Config;
+import femr.business.helpers.jwt.IJwtValidator;
 import femr.business.services.core.IUserService;
 import femr.business.services.core.api.IAuthService;
 import femr.common.dtos.CurrentUser;
 import femr.common.dtos.ServiceResponse;
+import femr.common.dtos.jwt.IVerifiedJwt;
+import femr.common.dtos.jwt.UserTokens;
 import femr.data.daos.core.IUserRepository;
 import femr.data.models.core.IUser;
 import femr.util.calculations.dateUtils;
@@ -14,6 +17,7 @@ import femr.util.encryptions.IPasswordEncryptor;
 import org.joda.time.DateTime;
 import org.joda.time.Days;
 import play.Logger;
+import play.libs.F;
 
 import javax.inject.Inject;
 import java.io.UnsupportedEncodingException;
@@ -28,13 +32,15 @@ public class AuthService implements IAuthService {
     private IPasswordEncryptor passwordEncryptor;
     private final IUserRepository userRepository;
     private final Config configuration;
+    private IJwtValidator jwtValidator;
 
     @Inject
-    public AuthService(IUserService userService, IPasswordEncryptor passwordEncryptor, IUserRepository userRepository, Config configuration) {
+    public AuthService(IUserService userService, IPasswordEncryptor passwordEncryptor, IUserRepository userRepository, Config configuration, IJwtValidator jwtValidator) {
         this.userService = userService;
         this.passwordEncryptor = passwordEncryptor;
         this.userRepository = userRepository;
         this.configuration = configuration;
+        this.jwtValidator = jwtValidator;
     }
 
     @Override
@@ -76,7 +82,6 @@ public class AuthService implements IAuthService {
 
             userRepository.createLoginAttempt(email, true, ipAddressBinary, user.getId());
 
-            long timeout = Long.parseLong(configuration.getString("sessionTimeout"));
             CurrentUser currentUserDTO = new CurrentUser(
                 user.getId(),
                 user.getFirstName(),
@@ -84,7 +89,7 @@ public class AuthService implements IAuthService {
                 user.getEmail(),
                 user.getRoles(),
                 null,
-                timeout
+                0L
             );
 
             response.setResponseObject(currentUserDTO);
@@ -93,21 +98,47 @@ public class AuthService implements IAuthService {
         return response;
     }
 
-
-    public ServiceResponse<String> getSignedToken(CurrentUser user){
+    @Override
+    public ServiceResponse<UserTokens> createUserTokens(CurrentUser user){
 
         String secret = configuration.getString("play.http.secret.key");
-        ServiceResponse<String> response = new ServiceResponse<>();
+        int authTimeout = configuration.getInt("jwt.authTimeout");
+        int refreshTimeout = configuration.getInt("jwt.refreshTimeout");
+        String issuer = "fe.mr";
+        if(configuration.hasPath("jwt.issuer")) {
+            issuer = configuration.getString("jwt.issuer");
+        }
+        ServiceResponse<UserTokens> response = new ServiceResponse<>();
 
         try {
             Algorithm algorithm = Algorithm.HMAC256(secret);
-            String token = JWT.create()
-                .withIssuer("fEMR")
+            String authToken = JWT.create()
+                .withIssuer(issuer)
                 .withClaim("user_id", user.getId())
-                .withExpiresAt(Date.from(ZonedDateTime.now(ZoneId.systemDefault()).plusMinutes(user.getTimeout2()).toInstant()))
+                .withSubject(user.getEmail())
+                .withIssuedAt(Date.from(ZonedDateTime.now().toInstant()))
+                .withExpiresAt(Date.from(ZonedDateTime.now(ZoneId.systemDefault()).plusMinutes(authTimeout).toInstant()))
                 .sign(algorithm);
 
-            response.setResponseObject(token);
+            // TODO - the refresh token might not need to be straight jwt?
+            Date issuedAt = Date.from(ZonedDateTime.now().toInstant());
+
+            String refreshToken = JWT.create()
+                .withIssuer(issuer)
+                .withClaim("user_id", user.getId())
+                .withSubject(user.getEmail())
+                .withIssuedAt(issuedAt)
+                .withExpiresAt(Date.from(ZonedDateTime.now(ZoneId.systemDefault()).plusMinutes(refreshTimeout).toInstant()))
+                .sign(algorithm);
+
+            // store refresh token with user
+            IUser userModel = userRepository.retrieveUserById(user.getId());
+            userModel.setRefreshToken(refreshToken);
+            userModel.setRefreshTokenIssuedAt(new DateTime(issuedAt));
+            userRepository.updateUser(userModel);
+
+            UserTokens tokens = new UserTokens(user.getId(), authToken, refreshToken);
+            response.setResponseObject(tokens);
         }
         catch (UnsupportedEncodingException e){
             Logger.error("Error getting signed token: Unsupported character encoding in secret");
@@ -116,4 +147,67 @@ public class AuthService implements IAuthService {
 
         return response;
     }
+
+    @Override
+    public ServiceResponse<UserTokens> refreshUserTokens(String refreshToken){
+
+        F.Either<IJwtValidator.Error, IVerifiedJwt> res = jwtValidator.verify(refreshToken);
+
+        if (res.left.isPresent()) {
+            String message = res.left.get().toString();
+            if(res.left.get() == IJwtValidator.Error.ERR_INVALID_SIGNATURE_OR_CLAIM){
+                // error
+            }
+        }
+
+        IVerifiedJwt verifiedJwt = res.right.get();
+
+        IUser user = userRepository.retrieveUserById(verifiedJwt.getUserId());
+
+        ServiceResponse<UserTokens> response = new ServiceResponse<>();
+        int refreshTimeout = configuration.getInt("jwt.refreshTimeout");
+
+        // check error states
+        if(user.getRefreshToken() == null){
+            response.addError("", "Invalid Refresh Token");
+            return response;
+        }
+        if(!user.getRefreshToken().equals(refreshToken)){
+            response.addError("", "Invalid Refresh Token");
+            return response;
+        }
+        else if(user.getRefreshTokenIssuedAt().plusMinutes(refreshTimeout).isBeforeNow()){
+            response.addError("", "Refresh Token is Expired");
+            return response;
+        }
+        else {
+            CurrentUser currentUserDTO = new CurrentUser(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getRoles(),
+                null,
+                0L
+            );
+
+            return createUserTokens(currentUserDTO);
+        }
+    }
+
+    @Override
+    public ServiceResponse<Integer> logoutUser(Integer userId){
+
+        ServiceResponse<Integer> response = new ServiceResponse<>();
+
+        IUser userModel = userRepository.retrieveUserById(userId);
+        userModel.setRefreshToken(null);
+        userModel.setRefreshTokenIssuedAt(null);
+        userRepository.updateUser(userModel);
+
+        response.setResponseObject(userId);
+
+        return response;
+    }
+
 }

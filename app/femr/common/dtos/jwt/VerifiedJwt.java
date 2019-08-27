@@ -12,6 +12,7 @@ public class VerifiedJwt implements IVerifiedJwt {
     private String issuer;
     private Integer userId;
     private Date expiresAt;
+    private String fullToken;
 
     public VerifiedJwt(DecodedJWT decodedJWT) {
         this.header = decodedJWT.getHeader();
@@ -19,6 +20,7 @@ public class VerifiedJwt implements IVerifiedJwt {
         this.issuer = decodedJWT.getIssuer();
         this.expiresAt = decodedJWT.getExpiresAt();
         this.userId = decodedJWT.getClaim("user_id").asInt();
+        this.fullToken = decodedJWT.getToken();
     }
 
     @Override
@@ -44,6 +46,11 @@ public class VerifiedJwt implements IVerifiedJwt {
     @Override
     public Integer getUserId(){
         return userId;
+    }
+
+    @Override
+    public String getFullToken() {
+        return fullToken;
     }
 
     @Override

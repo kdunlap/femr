@@ -8,4 +8,5 @@ public interface IVerifiedJwt {
     String getIssuer();
     Date getExpiresAt();
     Integer getUserId();
+    String getFullToken();
 }

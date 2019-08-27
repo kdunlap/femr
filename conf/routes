@@ -103,7 +103,8 @@ POST        /feedback                                           @femr.ui.control
 #API
 +noJwtFilter
 POST        /api/login                                          @femr.ui.controllers.api.LoginController.login()
++noJwtFilter
+POST        /api/refresh                                        @femr.ui.controllers.api.LoginController.refresh()
 
 POST        /api/logout                                         @femr.ui.controllers.api.LoginController.logout()
-POST        /api/refresh                                        @femr.ui.controllers.api.LoginController.refresh()
 GET         /api/user                                           @femr.ui.controllers.api.UserController.get()

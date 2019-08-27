@@ -41,6 +41,10 @@ public class User implements IUser {
     private String email;
     @Column(name = "password", nullable = false)
     private String password;
+    @Column(name = "refresh_token")
+    private String refreshToken;
+    @Column(name = "refresh_token_issued_at")
+    private DateTime refreshTokenIssuedAt;
     @ManyToMany(fetch = FetchType.LAZY, targetEntity = Role.class, cascade = CascadeType.ALL)
     @JoinTable(
             name = "user_roles",
@@ -111,6 +115,26 @@ public class User implements IUser {
     @Override
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    @Override
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    @Override
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    @Override
+    public DateTime getRefreshTokenIssuedAt() {
+        return refreshTokenIssuedAt;
+    }
+
+    @Override
+    public void setRefreshTokenIssuedAt(DateTime refreshTokenIssuedAt) {
+        this.refreshTokenIssuedAt = refreshTokenIssuedAt;
     }
 
     @Override
