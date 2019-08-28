@@ -15,6 +15,7 @@ import play.routing.HandlerDef;
 import play.routing.Router;
 
 import static play.mvc.Results.forbidden;
+import static play.mvc.Results.unauthorized;
 
 public class JwtFilter extends Filter {
     private static final String HEADER_AUTHORIZATION = "Authorization";
@@ -46,7 +47,7 @@ public class JwtFilter extends Filter {
         Optional<String> authHeader =  requestHeader.getHeaders().get(HEADER_AUTHORIZATION);
 
         if (!authHeader.filter(ah -> ah.contains(BEARER)).isPresent()) {
-            return CompletableFuture.completedFuture(forbidden(ERR_AUTHORIZATION_HEADER));
+            return CompletableFuture.completedFuture(unauthorized(ERR_AUTHORIZATION_HEADER));
         }
 
         String token = authHeader.map(ah -> ah.replace(BEARER, "")).orElse("");
@@ -59,7 +60,7 @@ public class JwtFilter extends Filter {
                 message = ERR_INVALID_SIGNATURE;
             }
 
-            return CompletableFuture.completedFuture(forbidden(message));
+            return CompletableFuture.completedFuture(unauthorized(message));
         }
 
         return nextFilter.apply(requestHeader.withAttrs(requestHeader.attrs().put(Attrs.VERIFIED_JWT, res.right.get())));

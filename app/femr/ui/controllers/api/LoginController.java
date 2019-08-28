@@ -34,12 +34,12 @@ public class LoginController extends Controller {
         CreateViewModel viewModel = createViewModelForm.bindFromRequest().get();
         ServiceResponse<CurrentUser> response = authService.authenticateUser(viewModel.getEmail(), viewModel.getPassword(), request().remoteAddress());
 
-        if (response.hasErrors()) return forbidden();
+        if (response.hasErrors()) return unauthorized();
         else{
             CurrentUser user = response.getResponseObject();
             ServiceResponse<UserTokens> tokenResponse = authService.createUserTokens(user);
             // TODO - maybe this should be more specific?
-            if(tokenResponse.hasErrors()) throw new RuntimeException();
+            if(tokenResponse.hasErrors()) return unauthorized();
 
             UserTokens userTokens = tokenResponse.getResponseObject();
             AuthResponseDTO authResponseDTO = new AuthResponseDTO(
@@ -58,7 +58,7 @@ public class LoginController extends Controller {
 
         // clear refresh token from database
         ServiceResponse<Integer> logoutResponse = authService.logoutUser(verifiedJwt.getUserId());
-        if(logoutResponse.hasErrors()) throw new RuntimeException();
+        if(logoutResponse.hasErrors()) return unauthorized();
 
         return ok(Json.toJson(true));
     }
@@ -70,7 +70,7 @@ public class LoginController extends Controller {
 
         // get refresh token from post
         ServiceResponse<UserTokens> refreshResponse = authService.refreshUserTokens(refreshRequestDTO.getRefreshToken());
-        if(refreshResponse.hasErrors()) throw new RuntimeException();
+        if(refreshResponse.hasErrors()) return unauthorized();
 
         UserTokens userTokens = refreshResponse.getResponseObject();
         AuthResponseDTO authResponseDTO = new AuthResponseDTO(
